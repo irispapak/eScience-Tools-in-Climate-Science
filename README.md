@@ -11,11 +11,11 @@ A Python-based tool for analyzing biases in Cloud Droplet Number Concentration (
 
 ## Installation
 
-Ensure you have the following dependencies installed (via `conda` or `pip`):
--   `numpy`
--   `xarray`
--   `gdal` (for HDF4 handling)
--   `netCDF4` (for output generation)
+Install from the project directory:
+
+```bash
+pip install -e project-01-modis-nd-bias[cli,plot]
+```
 
 ## Usage
 
@@ -23,28 +23,50 @@ Ensure you have the following dependencies installed (via `conda` or `pip`):
 You can run the script directly from the terminal to process an entire directory of HDF files.
 
 ```bash
-python3 modis_nd_bias.py --input-dir ./data/ --output-dir ./results/ --recursive
+python -m modis_nd_bias.cli --recursive --plots
+```
+
+## Development Install
+
+```bash
+pip install -e project-01-modis-nd-bias[cli,plot]
+```
+
+## Example Script
+
+```bash
+python3 project-01-modis-nd-bias/examples/run_bias_example.py
 ```
 
 **Arguments:**
 -   `--input-dir`: Path to directory containing MODIS `.hdf` files.
--   `--output-dir`: (Optional) Directory to save processed `.nc` files. Defaults to `./processed`.
--   `--recursive`: (Optional) Search for files recursively in subdirectories.
+-   `--input-dirs`: One or more input directories.
+-   `--output-dir`: Output directory for processed `.nc` files and plots. Defaults to `project-01-modis-nd-bias/data/processed`.
+-   `--recursive`: Search for files recursively in subdirectories.
+-   `--plots`: Generate plots in the output directory.
+-   `--plots-only`: Only generate plots from existing processed `.nc` files.
 
 ### 2. Jupyter Notebook / Library
-For interactive analysis, import the module in your Python scripts or Notebooks. See `modis_nd_bias.ipynb` for a complete example.
+For interactive analysis, import the module in your Python scripts or Notebooks. See `project-01-modis-nd-bias/notebooks/modis_nd_bias.ipynb` for a complete example.
 
 ```python
-import modis_nd_bias
+from modis_nd_bias import process_files
 
 # Define paths and run
 files = ["file1.hdf", "file2.hdf"]
-modis_nd_bias.process_files(files, "./output_dir", resolutions=[1, 5, 20])
+process_files(files, "./output_dir", resolutions=[1, 5, 20])
 ```
 
-## Project Structure
--   `modis_nd_bias.py`: Core logic and CLI entry point.
--   `modis_nd_bias.ipynb`: Demonstration notebook.
+## Repository Layout
+-   `project-01-modis-nd-bias/src/modis_nd_bias/`: Python package.
+-   `project-01-modis-nd-bias/examples/run_bias_example.py`: Example script (hypothetical local file).
+-   `project-01-modis-nd-bias/notebooks/modis_nd_bias.ipynb`: Demonstration notebook.
+-   `project-01-modis-nd-bias/notebooks/escience2020-group8-Presvelou.ipynb`: Course notebook.
+-   `project-01-modis-nd-bias/data/processed/`: Processed NetCDF files and generated plots.
+
+## Example Plot
+
+![Bias vs Homogeneity (LWP color)](project-01-modis-nd-bias/outputs/bias-nd-with-homogeneity-cb-lwp.jpg)
 
 ---
 *Based on the eScience Tools in Climate Science winter course (2020).*

@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/modis_nd_bias/__init__.py
+src/modis_nd_bias/cli.py
+src/modis_nd_bias/core.py
+src/modis_nd_bias/plot.py
+src/modis_nd_bias.egg-info/PKG-INFO
+src/modis_nd_bias.egg-info/SOURCES.txt
+src/modis_nd_bias.egg-info/dependency_links.txt
+src/modis_nd_bias.egg-info/entry_points.txt
+src/modis_nd_bias.egg-info/requires.txt
+src/modis_nd_bias.egg-info/top_level.txt
+tests/test_core.py

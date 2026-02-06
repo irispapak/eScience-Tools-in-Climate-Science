@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modis-nd-bias"
+version = "0.1.0"
+description = "MODIS cloud droplet number concentration bias analysis"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy",
+  "xarray",
+  "netCDF4",
+]
+
+[project.optional-dependencies]
+cli = ["gdal"]
+plot = ["matplotlib"]
+
+[project.scripts]
+modis-nd-bias = "modis_nd_bias.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

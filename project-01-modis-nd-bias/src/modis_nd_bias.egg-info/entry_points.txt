@@ -1,0 +1,2 @@
+[console_scripts]
+modis-nd-bias = modis_nd_bias.cli:main

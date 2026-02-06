@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: modis-nd-bias
+Version: 0.1.0
+Summary: MODIS cloud droplet number concentration bias analysis
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: xarray
+Requires-Dist: netCDF4
+Provides-Extra: cli
+Requires-Dist: gdal; extra == "cli"
+Provides-Extra: plot
+Requires-Dist: matplotlib; extra == "plot"
+
+# MODIS Nd Bias Package
+
+This package contains the core implementation for the MODIS Nd bias analysis.
+See the repository README for full usage instructions.

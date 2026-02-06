@@ -11,8 +11,7 @@ import logging
 import os
 import sys
 import warnings
-import argparse
-from typing import List, Tuple, Optional, Any
+from typing import List, Tuple
 
 import numpy as np
 import xarray as xr
@@ -21,7 +20,7 @@ import xarray as xr
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -37,12 +36,7 @@ try:
 except ImportError:
     logger.warning("Warning: 'netCDF4' not found. Saving to NetCDF might fail.")
 
-try:
-    import statsmodels.api as sm
-except ImportError:
-    logger.warning("Warning: 'statsmodels' not found. Analysis might be limited.")
-
-# Matplotlib import removed as it is currently unused.
+# Matplotlib and statsmodels are not required for core processing.
 
 # xr.set_options(display_style='html') # Not needed for CLI
 # warnings.filterwarnings('ignore') # Better to handle specific warnings
@@ -132,14 +126,17 @@ def calculate_droplet_concentration(re: xr.DataArray, tau: xr.DataArray, T: floa
 
 def get_subdataset(file: str, varnames: List[str]) -> List[str]:
     """Retrieves subdataset names from an HDF file using GDAL."""
+    gdal.UseExceptions()
+    gdal.PushErrorHandler("CPLQuietErrorHandler")
     g = gdal.Open(file)
+    gdal.PopErrorHandler()
     if g is None:
         raise IOError(f"Could not open file with GDAL: {file}")
     subdatasets = g.GetSubDatasets()
     l = []
     for varname in varnames:
-        # Check against the identifier string in the tuple (name, description)
-        l.extend([s[0] for s in subdatasets if varname in s[0].split(':')[-1]])
+        # Match on substring to mirror notebook behavior (includes day/night variants)
+        l.extend([s[0] for s in subdatasets if varname in s[0].split(":")[-1]])
     return l
 
 
@@ -149,21 +146,35 @@ def read_hdf4(file: str, varnames: List[str]) -> xr.Dataset:
     fname_list = get_subdataset(file, varnames)
 
     for fname in fname_list:
-        # Note: open_rasterio is deprecated, but currently required for this GDAL-based workflow.
-        # Consider migrating to rioxarray in the future.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=DeprecationWarning)
-            # Use chunks=None or explicit chunks to possibly return dask array if needed, 
-            # but current logic assumes in-memory.
-            myDataset = xr.open_rasterio(fname)
-            
-        short_name = fname.split(':')[-1]
-        ld.append(myDataset.to_dataset(name=short_name))
+        gdal.PushErrorHandler("CPLQuietErrorHandler")
+        g = gdal.Open(fname)
+        gdal.PopErrorHandler()
+        if g is None:
+            raise IOError(f"Could not open subdataset with GDAL: {fname}")
+
+        arr = g.ReadAsArray()
+        if arr is None:
+            raise IOError(f"Could not read subdataset array: {fname}")
+
+        if arr.ndim == 2:
+            # Add a band dimension to match open_rasterio behavior
+            arr = arr[None, :, :]
+
+        bands, ny, nx = arr.shape
+        y = np.arange(ny)
+        x = np.arange(nx)
+        data = xr.DataArray(
+            arr,
+            dims=["band", "y", "x"],
+            coords={"band": np.arange(1, bands + 1), "y": y, "x": x},
+            name=fname.split(":")[-1],
+        )
+        ld.append(data.to_dataset())
 
     return xr.merge(ld)
 
 
-def coarsen_image(da, avg_window_size=10, boundary='exact'):
+def coarsen_image(da, avg_window_size=10, boundary='trim'):
     """Coarsens an xarray.DataArray based on the averaging window size."""
     return da.coarsen(x=avg_window_size, y=avg_window_size, boundary=boundary).mean(skipna=True)
 
@@ -441,27 +452,10 @@ def process_files(input_files: List[str], output_dir: str, resolutions: List[int
             logger.error(f"Error processing {f}: {e}", exc_info=True)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Process MODIS cloud data to analyze Nd bias.")
-    parser.add_argument('--input-dir', type=str, required=True, help='Directory containing HDF files (can use recursive globbing).')
-    parser.add_argument('--output-dir', type=str, default='./processed', help='Directory to save processed NetCDF files.')
-    parser.add_argument('--recursive', action='store_true', help='Search recursively for HDF files in input directory.')
-    
-    args = parser.parse_args()
-
-    search_pattern = "**/*.hdf" if args.recursive else "*.hdf"
-    
-    # Check if input directory exists
-    if not os.path.exists(args.input_dir):
-        logger.error(f"Input directory not found: {args.input_dir}")
-        sys.exit(1)
-
-    fileset = [file for file in glob.glob(os.path.join(args.input_dir, search_pattern), recursive=args.recursive)]
-    
-    logger.info(f"Found {len(fileset)} files in {args.input_dir}")
-    
-    process_files(fileset, args.output_dir, DEFAULT_RESOLUTIONS)
-
-
-if __name__ == "__main__":
-    main()
+__all__ = [
+    "DEFAULT_RESOLUTIONS",
+    "calculate_droplet_concentration",
+    "calculate_bias_nd_and_homogeneity",
+    "coarsen_image",
+    "process_files",
+]
